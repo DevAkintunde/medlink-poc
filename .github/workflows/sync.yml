@@ -3,7 +3,10 @@ on:
   push:
     branches:
       - main
-
+env:
+  # Opt into Node.js 24 now to clear the warning
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  
 jobs:
   sync:
     runs-on: ubuntu-latest
