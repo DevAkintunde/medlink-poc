@@ -4,7 +4,6 @@ on:
     branches:
       - main
 env:
-  # Opt into Node.js 24 now to clear the warning
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -21,9 +20,7 @@ jobs:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          # 1. Removed '://' after '@'
-          # 2. Added '$' before {DEST_REPO}
-          REMOTE_URL="https://x-access-token:${TOKEN}@://github.com{DEST_REPO}.git"
+          REMOTE_URL="https://x-access-token:${TOKEN}@github.com/${DEST_REPO}.git"
           
           git remote add destination "$REMOTE_URL"
           git push destination main --force
