@@ -3,13 +3,13 @@ import { OK, UNAUTHORIZED, CONFLICT, REDIRECTED } from "../../../constants/statu
 import * as accountController from "../../../controllers/account.controller.js";
 import { avatarUpload } from "../../../middlewares/operations/mediaUpload.js";
 import { requestParser } from "../../../middlewares/requestParser.js";
-import { UserSecurity } from "../../../models/utils/UserSecurity.model.js";
+import { UserSecurity } from "../../../../../../common/models/UserSecurity.model.js";
 import { statusCodes } from "../../../constants/index.js";
 import { generate2faSecret, validate2faCode } from "../../../utils/authorization/twoFa.js";
 import { logger } from "../../../utils/logger.js";
 import { userAccessTimestampsLog } from "../../../functions/userAccessTimestampsLog.js";
 import { ParameterizedContext } from "koa";
-import { Notification } from "../../../models/utils/Notification.model.js";
+import { Notification } from "../../../../../../common/models/Notification.model.js";
 import { Router } from "../../../middlewares/router.js";
 
 const router = Router({

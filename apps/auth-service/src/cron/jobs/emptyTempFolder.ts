@@ -1,7 +1,7 @@
+import { logger } from "@medlink/common";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { logger } from "../../utils/logger.js";
 
 const directory = process.env.tempFolder ? path.join("./" + process.env.tempFolder) : null;
 export const emptyTempFolder = async () => {

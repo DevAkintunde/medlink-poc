@@ -1,10 +1,9 @@
-import { getOffsetTimestamp } from "../functions/index.js";
-import { Notification } from "../models/utils/Notification.model.js";
-import { OTP } from "../models/utils/OTP.model.js";
-import { UserAccessTimestamp } from "../models/utils/UserAccessTimestamp.model.js";
-import { UserSecurity } from "../models/utils/UserSecurity.model.js";
-import { logger } from "../utils/logger.js";
-import { sequelizeInstances } from "../config/db.config.js";
+import { sequelizeInstances, getOffsetTimestamp, logger } from "@medlink/common";
+import { Notification } from "../../../../common/models/Notification.model.js";
+import { OTP } from "../../../../common/models/OTP.model.js";
+import { UserAccessTimestamp } from "../../../../common/models/UserAccessTimestamp.model.js";
+import { UserSecurity } from "../../../../common/models/UserSecurity.model.js";
+
 import { Admin } from "../models/accounts/Admin.model.js";
 import { Sequelize } from "sequelize";
 import { AdminRole } from "../models/accounts/AdminRole.model.js";

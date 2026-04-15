@@ -2,7 +2,7 @@
 import { default as dbFields } from "./dbFieldsOptions/index.js";
 import { default as auth } from "./authRoutes/index.js";
 import { nonAuthAccountRelatedRoutes } from "./accountPublic/index.js";
-import { Router } from "../../middlewares/router.js";
+import { Router } from "@medlink/common";
 
 // API endpoints
 const routerPrefix = "/v1";

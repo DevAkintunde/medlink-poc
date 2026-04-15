@@ -4,7 +4,7 @@ import { default as notifications } from "./notifications.route.js";
 import { authenticateEncryptedToken } from "../../../utils/index.js";
 import { Router } from "../../../middlewares/router.js";
 import { statusCodes } from "../../../constants/index.js";
-import { UserAccessTimestamp } from "../../../models/utils/UserAccessTimestamp.model.js";
+import { UserAccessTimestamp } from "../../../../../../common/models/UserAccessTimestamp.model.js";
 
 /* 
 	While refresh token is integrated in core, it is currently not in use in core API routes as decision had not been made on the storage mechanism to used.

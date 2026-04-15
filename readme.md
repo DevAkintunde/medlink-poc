@@ -6,8 +6,8 @@ You stay in the root directory and use the --filter flag. You almost never need 
  - To add same package to all services:
     - pnpm add koa --filter "./apps/**"
 
-  - To add a shared internal library to a service:
-    - pnpm add @my-repo/shared-utils --filter auth-service --workspace
+  - To add a shared/common internal library to a service:
+    - pnpm add @medlink/common --filter auth-service --workspace
 
   - To install everything in the whole repo:
     - pnpm install

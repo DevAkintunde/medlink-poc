@@ -1,9 +1,12 @@
 import "dotenv/config";
-import { init } from "./server.js";
-//import process from "node:process";
+import { server } from "@medlink/common";
+import router from "./src/api/api.entry.router.js";
+import { jobScheduler } from "./src/cron/jobScheduler.js";
 
 //Define App server config in startBox
-export default init({
+export default server({
+	cronJobs: jobScheduler,
+	appRoutes: router,
 	cors: {
 		origin: [
 			"http://localhost",

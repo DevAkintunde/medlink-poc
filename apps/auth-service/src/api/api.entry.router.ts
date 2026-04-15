@@ -1,11 +1,10 @@
 // routes imports
-import { throwError } from "../functions/throwError.js";
-import config from "../../config.js";
-import swaggerDocs from "../../greybox.swagger.js";
+import config from "../../app.config.js";
+import swaggerDocs from "../../app.swagger.js";
 import { v1 } from "./v1/index.js";
 import appConfig from "../../app.config.js";
-import { logger } from "../utils/logger.js";
-import { Router } from "../middlewares/router.js";
+import { logger, throwError } from "@medlink/common";
+import { Router } from "../../../../common/middlewares/router.js";
 
 // contorl allowed methods
 const enforcedMethods = config.methods;

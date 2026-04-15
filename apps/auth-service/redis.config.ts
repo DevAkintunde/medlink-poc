@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { logger } from "./src/utils/logger";
+import { logger } from "@medlink/common";
 const envs = process.env;
 
 const forceRedisInit = envs.MEMORY_CACHE?.toLowerCase() === "redis" || envs.CONVERSATION_STORE?.toLowerCase() === "redis"; // where a engine/procss exists that relies on redis, force an initializing even if envs.REDIS_CLIENT is unset - using local connection if available

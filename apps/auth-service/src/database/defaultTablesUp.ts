@@ -1,7 +1,5 @@
-import { sequelizeInstances } from "../config/db.config.js";
+import { hashPassword, logger, sequelizeInstances } from "@medlink/common";
 import { Admin } from "../models/accounts/Admin.model.js";
-import { logger } from "../utils/logger.js";
-import { hash } from "../utils/password.js";
 
 const instances = Object.values(sequelizeInstances);
 
@@ -10,7 +8,7 @@ async function defaultTablesUp() {
 		firstName: "Akintunde",
 		lastName: "EB",
 		email: "ebakintunde@gmail.com",
-		password: hash("accounts"),
+		password: hashPassword("accounts"),
 		role: 4,
 		state: true,
 	};
@@ -18,7 +16,7 @@ async function defaultTablesUp() {
 		firstName: "Akintunde",
 		lastName: "Akin",
 		email: "devakintunde@gmail.com",
-		password: hash("accounts"),
+		password: hashPassword("accounts"),
 		role: 999,
 		state: true,
 	};

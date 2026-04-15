@@ -1,8 +1,7 @@
 import Joi, { ObjectSchema } from "joi";
 import { Next } from "koa";
 import { AppContext } from "../@types";
-import { phoneNumberValidator, validatorHandler } from "../middlewares";
-import { throwError } from "../functions";
+import { validatorHandler, phoneNumberValidator, throwError } from "@medlink/common";
 
 const signin = async (ctx: AppContext, next: Next) => {
 	if (!ctx.request.body.email && !ctx.request.body.phoneNumber) throwError(406, "Either email or phone number must be provided to sign in");

@@ -1,9 +1,7 @@
-import { FORBIDDEN, NOT_FOUND, OK } from "../../../constants/statusCodes.js";
 import { Op } from "sequelize";
-import { Router } from "../../../middlewares/router.js";
-import { dbQuerier } from "../../../middlewares/dbQuerier.js";
-import { Notification } from "../../../models/utils/Notification.model.js";
+import { Notification } from "../../../../../../common/models/Notification.model.js";
 import { AdminRole } from "../../../models/accounts/AdminRole.model.js";
+import { dbQuerier, Router, statusCodes } from "@medlink/common";
 
 const router = Router({
 	prefix: "/notifications",
@@ -113,16 +111,16 @@ router.get(
 				const notifications = await Notification(ctx.sequelizeInstance!).findAll(ctx.state.dbQuerier);
 				//console.log("notifications:", notifications);
 				if (!notifications) {
-					ctx.status = NOT_FOUND;
+					ctx.status = statusCodes.NOT_FOUND;
 					return (ctx.body = null);
 				}
-				ctx.status = OK;
+				ctx.status = statusCodes.OK;
 				ctx.body = {
-					status: OK,
+					status: statusCodes.OK,
 					data: notifications,
 				};
 			} else {
-				ctx.status = FORBIDDEN;
+				ctx.status = statusCodes.FORBIDDEN;
 				ctx.message = "Define at least a META filter to fetch notifications. Or leave out META filter to filter to server default";
 			}
 		}
@@ -144,13 +142,13 @@ router.get("/:uuid", async (ctx) => {
 		} else return false;
 	});
 	if (notification) {
-		ctx.status = OK;
+		ctx.status = statusCodes.OK;
 		ctx.body = {
-			status: OK,
+			status: statusCodes.OK,
 			data: notification.toJSON(),
 		};
 	} else {
-		ctx.status = NOT_FOUND;
+		ctx.status = statusCodes.NOT_FOUND;
 		ctx.message = "Oops. We are unsure you have the permission to view the notification you are looking for!";
 		return;
 	}
@@ -162,12 +160,12 @@ router.get("/:uuid/read", async (ctx) => {
 	const notification = await Notification(ctx.sequelizeInstance!).update({ status: "read" }, { where: { uuid: ctx.params.uuid } });
 
 	if (notification) {
-		ctx.status = OK;
+		ctx.status = statusCodes.OK;
 		ctx.body = {
-			status: OK,
+			status: statusCodes.OK,
 		};
 	} else {
-		ctx.status = NOT_FOUND;
+		ctx.status = statusCodes.NOT_FOUND;
 		ctx.message = "Oops. We are unsure you have the permission to view the notification you are looking for!";
 		return;
 	}

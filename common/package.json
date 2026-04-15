@@ -1,31 +1,20 @@
 {
-  "name": "auth-service",
-  "description": "The Auth endpoint",
-  "private": false,
-  "version": "2.0.1",
-  "type": "module",
-  "author": "Akintunde Akin",
+  "description": "Common shared library for microservices",
+  "name": "@medlink/common",
+  "version": "1.0.0",
+  "main": "./index.ts",
+  "private": true,
   "engines": {
-    "node": ">=20",
+    "node": ">=22",
     "npm": ">=9.0.0"
-  },
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/devakintunde/greybox"
   },
   "scripts": {
     "dev": "tsx watch index.ts",
-    "test": "vitest",
-    "build": "vite build --config vite.build.config.ts",
-    "prepublishOnly": "npm run build",
-    "init:folders": "node pre.js",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "test": "vitest"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "sqlite3",
-      "sharp"
+      "sqlite3"
     ]
   },
   "dependencies": {
@@ -33,7 +22,6 @@
     "@azure/storage-blob": "^12.31.0",
     "@koa/cors": "^5.0.0",
     "@koa/router": "^15.4.0",
-    "@medlink/common": "workspace:*",
     "@types/formidable": "^3.5.0",
     "@types/koa__router": "^12.0.5",
     "bcryptjs": "^2.4.3",

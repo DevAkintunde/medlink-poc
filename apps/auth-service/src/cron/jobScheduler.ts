@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { emptyTempFolder } from "./jobs/emptyTempFolder.js";
-import { logger } from "../utils/logger.js";
+import { logger } from "@medlink/common";
 
 const jobScheduler = async () => {
 	//every minute cron
