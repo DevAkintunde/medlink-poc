@@ -1,0 +1,23 @@
+name: Sync to Org Project
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Organization Repo
+        env:
+          # Replace ORG/REPO with the actual organization and repository name
+          DEST_REPO: "Medlink-Ehealth/medlink-backend"
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git remote add destination "https://x-access-token:$TOKEN@://github.com"
+          git push destination main --force
