@@ -6,7 +6,7 @@ on:
 env:
   # Opt into Node.js 24 now to clear the warning
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -22,5 +22,6 @@ jobs:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          git remote add destination "https://x-access-token:$TOKEN@://github.com"
+          REMOTE_URL="https://x-access-token:${TOKEN}@://github.com{DEST_REPO}.git"
+          git remote add destination "$REMOTE_URL"
           git push destination main --force
