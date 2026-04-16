@@ -16,6 +16,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug token usage
+        env:
+          DEST_REPO: "Medlink-Ehealth/medlink-backend"
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          # Test API again to confirm token works in this workflow context
+          curl -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${DEST_REPO}/git/refs \
+            -d '{
+              "ref": "refs/heads/test-from-workflow",
+              "sha": "b89d782c9d86d759d667edabd2044bb4a874de06"
+            }'
+          
+          # Now test git push with explicit environment
+          export GIT_TRACE=1
+          export GIT_CURL_VERBOSE=1
+          
+          # Try the simplest possible format
+          git push "https://${TOKEN}@github.com/${DEST_REPO}.git" HEAD:test-branch --force
+          
       - name: Sync via Pull Request
         env:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
