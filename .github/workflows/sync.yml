@@ -22,26 +22,28 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Push and Create PR
+      - name: Push and Create PR via API
         env:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
-          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
           BRANCH_NAME="sync/source-${GITHUB_SHA::8}"
           
-          # Add remote using PAT (no x-access-token)
-          git remote add destination "https://${GH_TOKEN}@github.com/${DEST_REPO}.git"
+          # Add remote using PAT
+          git remote add destination "https://${TOKEN}@github.com/${DEST_REPO}.git"
           
           # Push to new branch
           git push destination main:${BRANCH_NAME}
           
-          # Create PR using GitHub CLI
-          gh pr create \
-            --repo "${DEST_REPO}" \
-            --head "${BRANCH_NAME}" \
-            --base "main" \
-            --title "Sync from source repo: ${GITHUB_SHA::8}" \
-            --body "Automated sync from source repository.
-            
-            Commit: ${GITHUB_SHA}
-            Branch: ${GITHUB_REF_NAME}"
+          # Create PR using REST API (doesn't require common history)
+          curl -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${DEST_REPO}/pulls" \
+            -d "{
+              \"title\": \"Sync from source repo: ${GITHUB_SHA::8}\",
+              \"body\": \"Automated sync from source repository.\\n\\nCommit: ${GITHUB_SHA}\",
+              \"head\": \"${BRANCH_NAME}\",
+              \"base\": \"main\",
+              \"maintainer_can_modify\": true
+            }"
