@@ -35,15 +35,27 @@ jobs:
           # Push to new branch
           git push destination main:${BRANCH_NAME}
           
-          # Create PR using REST API (doesn't require common history)
-          curl -X POST \
+          # Create PR using REST API with verbose output
+          RESPONSE=$(curl -X POST \
             -H "Authorization: token ${TOKEN}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -w "\nHTTP Status: %{http_code}\n" \
             "https://api.github.com/repos/${DEST_REPO}/pulls" \
             -d "{
               \"title\": \"Sync from source repo: ${GITHUB_SHA::8}\",
               \"body\": \"Automated sync from source repository.\\n\\nCommit: ${GITHUB_SHA}\",
               \"head\": \"${BRANCH_NAME}\",
-              \"base\": \"main\",
-              \"maintainer_can_modify\": true
-            }"
+              \"base\": \"main\"
+            }")
+          
+          echo "$RESPONSE"
+          
+          # Check if PR was created
+          if echo "$RESPONSE" | grep -q '"html_url"'; then
+            PR_URL=$(echo "$RESPONSE" | grep -o '"html_url": "[^"]*' | cut -d'"' -f4)
+            echo "✅ PR created: ${PR_URL}"
+          else
+            echo "❌ PR creation failed"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
