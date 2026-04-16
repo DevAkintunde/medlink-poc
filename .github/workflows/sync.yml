@@ -1,8 +1,9 @@
-name: Sync to Org Project
+name: Sync to Org Project as PR
 on:
   push:
     branches:
       - main
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -15,12 +16,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push to Organization Repo
+      - name: Sync via Pull Request
         env:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          REMOTE_URL="https://x-access-token:${TOKEN}@github.com/${DEST_REPO}.git"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
+          BRANCH_NAME="sync/auto-sync"
+          REMOTE_URL="https://x-access-token:${TOKEN}@github.com/${DEST_REPO}.git"
           git remote add destination "$REMOTE_URL"
-          git push destination main --force
+          
+          # Force push to sync branch (updates existing PR if any)
+          git push destination main:${BRANCH_NAME} --force
+          
+          # Check if PR already exists
+          PR_EXISTS=$(gh pr list --repo "${DEST_REPO}" --head "${BRANCH_NAME}" --state open --json number --jq '.[0].number')
+          
+          if [ -n "$PR_EXISTS" ]; then
+            echo "Updating existing PR #${PR_EXISTS}"
+            gh pr edit "${PR_EXISTS}" \
+              --repo "${DEST_REPO}" \
+              --title "Sync from source repo: ${GITHUB_SHA::8}" \
+              --body "Updated sync from source repository.
+              
+              Latest commit: ${GITHUB_SHA}
+              Branch: ${GITHUB_REF_NAME}"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --repo "${DEST_REPO}" \
+              --head "${BRANCH_NAME}" \
+              --base "main" \
+              --title "Sync from source repo: ${GITHUB_SHA::8}" \
+              --body "Automated sync from source repository.
+              
+              Commit: ${GITHUB_SHA}
+              Branch: ${GITHUB_REF_NAME}"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
