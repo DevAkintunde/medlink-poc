@@ -22,12 +22,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Push to Destination dev branch
+      - name: Push to Destination dev-sync branch
         env:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
           # Force push source main to destination dev branch
-          git push "https://${TOKEN}@github.com/${DEST_REPO}.git" main:dev --force
+          git push "https://${TOKEN}@github.com/${DEST_REPO}.git" main:dev-sync --force
           
-          echo "✅ Successfully synced to dev branch"
+          echo "✅ Successfully synced to dev-sync branch"
