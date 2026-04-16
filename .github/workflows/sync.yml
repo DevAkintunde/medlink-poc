@@ -15,45 +15,33 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false  # Critical: prevents GITHUB_TOKEN from being used
 
-      - name: Debug token usage
-        env:
-          DEST_REPO: "Medlink-Ehealth/medlink-backend"
-          TOKEN: ${{ secrets.SYNC_TOKEN }}
-        run: |
-          # Test API again to confirm token works in this workflow context
-          curl -X POST \
-            -H "Authorization: token ${TOKEN}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${DEST_REPO}/git/refs \
-            -d '{
-              "ref": "refs/heads/test-from-workflow",
-              "sha": "b89d782c9d86d759d667edabd2044bb4a874de06"
-            }'
-          
-          # Now test git push with explicit environment
-          export GIT_TRACE=1
-          export GIT_CURL_VERBOSE=1
-          
-          # Try the simplest possible format
-          git push "https://${TOKEN}@github.com/${DEST_REPO}.git" HEAD:test-branch --force
-          
-      - name: Sync via Pull Request
-        env:
-          DEST_REPO: "Medlink-Ehealth/medlink-backend"
-          TOKEN: ${{ secrets.SYNC_TOKEN }}
-          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+      - name: Setup Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Push and Create PR
+        env:
+          DEST_REPO: "Medlink-Ehealth/medlink-backend"
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          BRANCH_NAME="sync/source-${GITHUB_SHA::8}"
           
-          # Push to temporary branch (not main)
-          BRANCH_NAME="sync/auto-sync-${GITHUB_SHA::8}"
-          REMOTE_URL="https://${TOKEN}@github.com/${DEST_REPO}.git"
-          git remote add destination "$REMOTE_URL"
+          # Add remote using PAT (no x-access-token)
+          git remote add destination "https://${GH_TOKEN}@github.com/${DEST_REPO}.git"
           
-          # Push to the temporary branch (this should work since it's not protected)
-          git push destination main:${BRANCH_NAME} --force
+          # Push to new branch
+          git push destination main:${BRANCH_NAME}
           
-          # Create PR from that branch
-          gh pr create --repo "${DEST_REPO}" --head "${BRANCH_NAME}" --base "main"
+          # Create PR using GitHub CLI
+          gh pr create \
+            --repo "${DEST_REPO}" \
+            --head "${BRANCH_NAME}" \
+            --base "main" \
+            --title "Sync from source repo: ${GITHUB_SHA::8}" \
+            --body "Automated sync from source repository.
+            
+            Commit: ${GITHUB_SHA}
+            Branch: ${GITHUB_REF_NAME}"
