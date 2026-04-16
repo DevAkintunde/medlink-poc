@@ -20,6 +20,7 @@ jobs:
         env:
           DEST_REPO: "Medlink-Ehealth/medlink-backend"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -55,5 +56,3 @@ jobs:
               Commit: ${GITHUB_SHA}
               Branch: ${GITHUB_REF_NAME}"
           fi
-        env:
-          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
