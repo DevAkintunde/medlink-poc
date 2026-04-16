@@ -1,33 +1,73 @@
-name: Sync to Org Project
+name: Sync from Source as PR
 on:
   push:
     branches:
       - main
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source
+      - name: Checkout Destination Repository
         uses: actions/checkout@v4
         with:
+          repository: "Medlink-Ehealth/medlink-backend"
+          token: ${{ secrets.SYNC_TOKEN }}
           fetch-depth: 0
-          persist-credentials: false
-
-      - name: Setup Git
+          
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Push to Destination dev-sync branch
+          
+      - name: Add Source Repository
         env:
-          DEST_REPO: "Medlink-Ehealth/medlink-backend"
+          SOURCE_REPO: "DevAkintunde/medlink-poc"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
-          # Force push source main to destination dev branch
-          git push "https://${TOKEN}@github.com/${DEST_REPO}.git" main:dev-sync --force
+          git remote add source "https://${TOKEN}@github.com/${SOURCE_REPO}.git"
+          git fetch source main
           
-          echo "✅ Successfully synced to dev-sync branch"
+      - name: Create Sync Branch with Source Changes
+        run: |
+          # Create a new branch from current main
+          git checkout -b sync/source-$(date +'%Y%m%d-%H%M%S')
+          
+          # Merge source changes
+          git merge source/main --allow-unrelated-histories \
+            -m "Sync from source repository" \
+            --no-edit
+          
+          # Push the sync branch
+          git push origin HEAD
+          
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          # Get current branch name
+          BRANCH=$(git branch --show-current)
+          
+          # Create PR
+          gh pr create \
+            --repo "Medlink-Ehealth/medlink-backend" \
+            --head "${BRANCH}" \
+            --base "main" \
+            --title "Sync from source repository - $(date +'%Y-%m-%d')" \
+            --body "## Automated Sync
+          
+          This PR syncs changes from the source repository.
+          
+          **Source Commit**: ${GITHUB_SHA}
+          
+          ### Changes included:
+          - Latest updates from source repository
+          
+          ### Review Checklist:
+          - [ ] Verify changes are compatible
+          - [ ] Run tests if applicable
+          - [ ] Merge when ready
+          
+          ### Conflict Resolution:
+          If there are conflicts, please resolve them manually before merging."
