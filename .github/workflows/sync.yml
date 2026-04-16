@@ -25,34 +25,13 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          BRANCH_NAME="sync/auto-sync"
+          # Push to temporary branch (not main)
+          BRANCH_NAME="sync/auto-sync-${GITHUB_SHA::8}"
           REMOTE_URL="https://x-access-token:${TOKEN}@github.com/${DEST_REPO}.git"
           git remote add destination "$REMOTE_URL"
           
-          # Force push to sync branch (updates existing PR if any)
+          # Push to the temporary branch (this should work since it's not protected)
           git push destination main:${BRANCH_NAME} --force
           
-          # Check if PR already exists
-          PR_EXISTS=$(gh pr list --repo "${DEST_REPO}" --head "${BRANCH_NAME}" --state open --json number --jq '.[0].number')
-          
-          if [ -n "$PR_EXISTS" ]; then
-            echo "Updating existing PR #${PR_EXISTS}"
-            gh pr edit "${PR_EXISTS}" \
-              --repo "${DEST_REPO}" \
-              --title "Sync from source repo: ${GITHUB_SHA::8}" \
-              --body "Updated sync from source repository.
-              
-              Latest commit: ${GITHUB_SHA}
-              Branch: ${GITHUB_REF_NAME}"
-          else
-            echo "Creating new PR"
-            gh pr create \
-              --repo "${DEST_REPO}" \
-              --head "${BRANCH_NAME}" \
-              --base "main" \
-              --title "Sync from source repo: ${GITHUB_SHA::8}" \
-              --body "Automated sync from source repository.
-              
-              Commit: ${GITHUB_SHA}
-              Branch: ${GITHUB_REF_NAME}"
-          fi
+          # Create PR from that branch
+          gh pr create --repo "${DEST_REPO}" --head "${BRANCH_NAME}" --base "main"
