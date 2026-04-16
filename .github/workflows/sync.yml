@@ -27,7 +27,7 @@ jobs:
           
           # Push to temporary branch (not main)
           BRANCH_NAME="sync/auto-sync-${GITHUB_SHA::8}"
-          REMOTE_URL="https://x-access-token:${TOKEN}@github.com/${DEST_REPO}.git"
+          REMOTE_URL="https://${TOKEN}@github.com/${DEST_REPO}.git"
           git remote add destination "$REMOTE_URL"
           
           # Push to the temporary branch (this should work since it's not protected)
