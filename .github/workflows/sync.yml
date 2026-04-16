@@ -27,7 +27,7 @@ jobs:
           
       - name: Add Source Repository
         env:
-          SOURCE_REPO: "your-org/your-source-repo"  # CHANGE THIS to your source repo
+          SOURCE_REPO: "DevAkintunde/medlink-poc"
           TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
           git remote add source "https://${TOKEN}@github.com/${SOURCE_REPO}.git"
