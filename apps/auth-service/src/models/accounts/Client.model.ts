@@ -1,6 +1,7 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from "sequelize";
 import { UserSetting } from "./UserSetting.model.js";
-import { sequelizeInstances } from "../../config/db.config.js";
+import { sequelizeInstances } from "@medlink/common";
+
 const instances = Object.values(sequelizeInstances);
 
 /**
@@ -194,13 +195,15 @@ type Attr = {
 	firstName: string;
 	lastName?: string;
 	phoneNumber?: string;
-	email?: string;
+	email: string;
 	password: string;
 	role: number;
 	state: boolean;
 	secured: boolean;
 	verified: boolean;
 	type: "client";
+	created?: string;
+	updated?: string;
 };
 export interface ClientStatic extends Model<Attr>, Attr {
 	toJSON(): Attr;

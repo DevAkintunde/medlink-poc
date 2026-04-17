@@ -5,7 +5,10 @@ const config: ConfigDefination = {
 	...ProjectConfig,
 	apiMultiTenancyMode: false,
 	methods: ["GET", "PATCH", "POST", "DELETE"],
+	serviceName: "Auth Service",
 
+	serverAddress: "http://localhost",
+	apiVersion: "v1",
 	// caching configuration
 	cache: {
 		max: 5000,
@@ -17,6 +20,9 @@ const config: ConfigDefination = {
 		ttl: 1000 * 60 * 60 * 3,
 		updateAgeOnGet: true,
 	},
+
+	// swagger custmisation
+	swaggerSetup: {},
 };
 
 export default config;

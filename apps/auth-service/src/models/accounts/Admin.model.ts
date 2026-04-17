@@ -1,7 +1,8 @@
 import { DataTypes, Model, ModelStatic, Sequelize } from "sequelize";
 import { AdminRole } from "./AdminRole.model.js";
 import { UserSetting } from "./UserSetting.model.js";
-import { sequelizeInstances } from "../../config/db.config.js";
+import { sequelizeInstances } from "@medlink/common";
+
 const instances = Object.values(sequelizeInstances);
 /*
   Admin ranks are defined by roles in interger values. 
@@ -234,6 +235,8 @@ type Attr = {
 	secured?: boolean;
 	verified?: boolean;
 	type: "admin";
+	created?: string;
+	updated?: string;
 };
 export interface AdminStatic extends Model<Attr>, Attr {
 	toJSON(): Attr;

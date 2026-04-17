@@ -1,6 +1,6 @@
-
+import { sequelizeInstances } from "@medlink/common";
 import { DataTypes, Model, Sequelize } from "sequelize";
-import { sequelizeInstances } from "../../config/db.config.js";
+
 const instances = Object.values(sequelizeInstances);
 /**
  * User setting

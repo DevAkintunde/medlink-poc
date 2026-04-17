@@ -1,28 +1,27 @@
+import { AppContext } from "../../@types/utils.js";
 import { NOT_FOUND, CONFLICT, BAD_REQUEST, SERVER_ERROR } from "../../constants/statusCodes.js";
 import { logger } from "../../utils/logger.js";
-import { ParameterizedContext, Next, DefaultContext } from "koa";
-import { Op, Sequelize } from "sequelize";
+import { Next } from "koa";
+import { Op } from "sequelize";
 
 type JsonValue = JsonObject;
 type JsonObject = {
 	[key: string]: JsonValue;
 };
-interface extendedParameterizedContext extends ParameterizedContext {
-	request: DefaultContext["request"] & {
-		body?: JsonValue;
-		files?: [string, File]; // [formidable.Fields<string>, formidable.Files<string>]
-		rawBody?: unknown;
-	};
-	sequelizeInstance: Sequelize;
-}
 
 //Use this to check the status/existence of an account on the server.
 
 // the 'exist' argument is a boolean that should be specified when called as either true or false
 // currentUser is passed to the header and can be used in any next middleware function.
-const checkAccount = (existStatus: boolean) => async (ctx: extendedParameterizedContext, next: Next) => {
+const checkAccount = (existStatus: boolean) => async (ctx: AppContext, next: Next) => {
 	const { email, uuid, phoneNumber } = ctx.request.body;
-	if (email || uuid || phoneNumber) {
+	if (!ctx.sequelizeInstance) {
+		logger.error("checkAccount cannot be called on an unactive sequelizeInstance");
+		ctx.state.error = {
+			code: SERVER_ERROR,
+			message: "Oops! User account already exist",
+		};
+	} else if (email || uuid || phoneNumber) {
 		try {
 			let thisUser;
 			if (ctx.state.userType) {

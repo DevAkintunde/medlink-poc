@@ -2,20 +2,14 @@
   "description": "Common shared library for microservices",
   "name": "@medlink/common",
   "version": "1.0.0",
-  "main": "./index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
   "private": true,
   "engines": {
     "node": ">=22",
     "npm": ">=9.0.0"
-  },
-  "scripts": {
-    "dev": "tsx watch index.ts",
-    "test": "vitest"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "sqlite3"
-    ]
   },
   "dependencies": {
     "@azure/identity": "^4.13.1",

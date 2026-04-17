@@ -2,6 +2,7 @@ import router from "@koa/router";
 import { DefaultContext, DefaultState } from "koa";
 import { Sequelize } from "sequelize";
 import config from "../../platform.config.js";
+import { Socket, Server } from "socket.io";
 
 type JsonValue = string | number | boolean | null | undefined | JsonObject | JsonArray;
 type JsonObject = {
@@ -10,12 +11,20 @@ type JsonObject = {
 type JsonArray = Array<JsonValue>;
 
 export interface RouterExtendedDefaultContext extends DefaultContext {
-	request?: {
+	request: DefaultContext["request"] & {
 		body?: JsonValue;
 		files?: [string, File]; // [formidable.Fields<string>, formidable.Files<string>]
 		rawBody?: unknown;
 	};
 	sequelizeInstance?: Sequelize;
+	tenantMode?: string;
+	ioSocket?: Socket & {
+		handshake: Socket["handshake"] & {
+			auth: Socket["handshake"]["auth"] & { sequelizeInstance?: Sequelize; tenantMode?: string };
+		};
+	};
+
+	io?: Server;
 }
 type routerProps = { prefix?: string; host?: string; subdomain?: string };
 

@@ -1,6 +1,6 @@
 import { KoaSwaggerUiOptions } from "koa2-swagger-ui";
 
-export const config: ConfigDefination = {
+const config: ConfigDefination = {
 	apiMultiTenancyMode: false,
 	methods: ["GET", "PATCH", "POST", "DELETE"], //allows to define/limit allowed request methods
 	//site media file controller
@@ -16,10 +16,9 @@ export const config: ConfigDefination = {
 	ignoreMailServer: true, // force non-checking of mail server setup
 	authTokenValidity: 3, // days
 	allowSocialAccountSignin: ["google"], //["google", "facebook"],
-	sitenameFull: "Med Link PoC",
-	sitename: "MedLink",
-	siteAddress: process.env.NODE_ENV !== "production" ? "http://medlink.test" : "https://medlink-app.azurewebsites.net",
-	serverAddress: process.env.NODE_ENV !== "production" ? "http://medlink.test" : "https://medlink-app.azurewebsites.net",
+	projectName: "MedLink",
+	// siteAddress: process.env.NODE_ENV !== "production" ? "http://medlink.test" : "https://medlink-app.azurewebsites.net",
+	// serverAddress: process.env.NODE_ENV !== "production" ? "http://medlink.test" : "https://medlink-app.azurewebsites.net",
 
 	// caching configuration
 	cache: {
@@ -32,6 +31,10 @@ export const config: ConfigDefination = {
 		ttl: 1000 * 60 * 60 * 3,
 		updateAgeOnGet: true,
 	},
+
+	// this should be set on app config
+	serverAddress: "",
+	apiVersion: "",
 };
 
 export default config;
@@ -48,7 +51,6 @@ export type ConfigDefination = {
 	};
 	debug?: boolean;
 	ignoreMailServer?: boolean; // force non-checking of mail server setup
-	appMode?: "apiOnly" | "serverless" | "fullstack";
 	apiMultiTenancyMode: boolean | string | string[];
 
 	// caching configuration
@@ -64,17 +66,11 @@ export type ConfigDefination = {
 	// customise swager UI
 	swaggerSetup?: Partial<KoaSwaggerUiOptions>;
 
-	//site server detail
-	apiEndpoint?: string;
-	authEndpoint?: string; // string | {[domain: *|string]: string} | false
 	authTokenValidity?: number; // days
-	setApiHostToBrowserOrigin?: boolean;
-	xRequestReferral?: string; //Remember to list allowable IDs on X_REQUEST_REFERRAL in .env
 
 	allowSocialAccountSignin?: ("google" | "facebook")[];
-	sitenameFull?: string;
-	sitename?: string;
-	siteThumbnail?: string;
-	siteAddress?: string;
-	serverAddress?: string;
+	serviceName?: string;
+	projectName?: string;
+	serverAddress: string;
+	apiVersion: string;
 };

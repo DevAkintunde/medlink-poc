@@ -23,7 +23,7 @@ import Redis from "ioredis";
 
 import { BAD_REQUEST, NOT_FOUND, OK, SERVICE_UNAVAILABLE, UNAUTHORIZED } from "./constants/statusCodes.js";
 import { Sequelize } from "sequelize";
-import appConfig from "../apps/auth-service/app.config.js";
+
 import { redisConfig } from "../apps/auth-service/redis.config.js";
 import { mailSender } from "./functions/mailSender.js";
 import { passportAuthInitializer } from "./config/passportAuthInitializer.js";
@@ -33,9 +33,24 @@ import { expressMiddleware } from "./middlewares/index.js";
 import { authenticateEncryptedToken } from "./utils/index.js";
 import Router from "@koa/router";
 import { RouterExtendedDefaultContext } from "./middlewares/router.js";
+import { ConfigDefination } from "../platform.config.js";
 
 const envs = process.env;
+const __dirname = nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url));
+const resolve = (p: string) => nodePath.resolve(__dirname, p);
 const projectRoot = process.cwd();
+
+// Let import the app/platform configurations
+const platformConfig = nodePath.resolve(nodePath.join(projectRoot, "..", "..", "platform.config.js"));
+const serviceConfig = nodePath.resolve(nodePath.join(projectRoot, "app.config.js"));
+
+const platformConfigSetting = (await import(platformConfig))?.["default"];
+const serviceConfigSetting = await import(serviceConfig);
+
+const appConfig = (serviceConfig ? { ...platformConfigSetting, ...serviceConfigSetting } : platformConfigSetting) as ConfigDefination;
+
+// console.log("appConfig", appConfig);
+
 const dynamicallyServeFilesInDirectory = appConfig?.files?.["dynamicallyServeFilesInDirectory"] as string | string[] | string[][];
 const filesDirectory =
 	dynamicallyServeFilesInDirectory && dynamicallyServeFilesInDirectory.length
@@ -91,7 +106,7 @@ const isRedis = async (): Promise<Redis | null> =>
 							receiver: [envs.MAIL_SERVER_SUPPORT_AUTH_MAIL || "", envs.MAIL_SERVER_AUTH_MAIL || "", "akin@mellywood.com"],
 							// sender: defaultSupportEmail,
 							subject: "Redis server issues",
-							content: `Unable to connect Redis server and ${appConfig.sitename} might be having production issues at the moment!!`,
+							content: `Unable to connect Redis server and ${appConfig.serviceName} might be having production issues at the moment!!`,
 							log: true,
 						});
 						redis.quit();
@@ -115,9 +130,6 @@ const isRedis = async (): Promise<Redis | null> =>
 		);
 		resolve(null);
 	});
-
-const __dirname = nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url));
-const resolve = (p: string) => nodePath.resolve(__dirname, p);
 
 // Cache
 const cacheConfig = {
@@ -245,7 +257,7 @@ const init = async ({
 				else if (typeof origin === "object" && origin.host) stringifyPossibleObjectOrigin.push(origin.host);
 			});
 			// where ctx.get("origin") is undefined as would be on request made from self hosted frontend, set origin to site address
-			const requestOrigin = ctx.get("origin") ? ctx.get("origin") : appConfig.sitename;
+			const requestOrigin = ctx.get("origin") ? ctx.get("origin") : appConfig.serverAddress;
 			if (requestOrigin && stringifyPossibleObjectOrigin.indexOf(requestOrigin) !== -1) {
 				return requestOrigin;
 			}
@@ -256,7 +268,7 @@ const init = async ({
 
 	// Quickly run & test an email server setup test if ignoreMailServer' is not set on config
 	if (!appConfig.ignoreMailServer) {
-		let sitename = appConfig.sitename;
+		let sitename = appConfig.projectName;
 		// sanitize website address
 		if (sitename) {
 			sitename = sitename.includes("//") ? sitename.split("//")[1] : sitename;
@@ -294,8 +306,8 @@ const init = async ({
 		appSessionConfig = { ...appSessionConfig, ...sessionConfig } as typeof appSessionConfig;
 	}
 	// ensure site address exist in cookie
-	if (!appSessionConfig["domain" as keyof typeof appSessionConfig] && appConfig.sitename)
-		appSessionConfig["domain" as "key"] = appConfig.sitename.includes("://") ? appConfig.sitename.split("://")[1] : appConfig.sitename;
+	// if (!appSessionConfig["domain" as keyof typeof appSessionConfig] && appConfig.sitename)
+	// 	appSessionConfig["domain" as "key"] = appConfig.sitename.includes("://") ? appConfig.sitename.split("://")[1] : appConfig.sitename;
 	//console.log('appSessionConfig ', appSessionConfig)
 
 	// Create and refresh nonce for external scripts
@@ -349,7 +361,7 @@ const init = async ({
 							origin.host.length &&
 							(ctx.get("origin") === origin.host ||
 								// where ctx.get("origin") might be empty on request made directly from the server
-								(!ctx.get("origin") && appConfig.sitename === origin.host))
+								(!ctx.get("origin") && appConfig.serverAddress === origin.host))
 						)
 							if (origin.csp !== true) {
 								// Ignore if CSP is true and use default App CSP settings
@@ -382,7 +394,7 @@ const init = async ({
 						origin.length &&
 						(ctx.get("origin") === (origin as string) ||
 							// where ctx.get("origin") might be empty on request made directly from frontend hosted on server itself
-							(!ctx.get("origin") && appConfig.sitename === origin))
+							(!ctx.get("origin") && appConfig.serverAddress === origin))
 					) {
 						let output = "'self'";
 						if (nonce) output = `${nonce} ${output}`;
@@ -487,7 +499,7 @@ const init = async ({
 		.use(passport.session())
 		.use(async (ctx, next) => {
 			// process authentication where session isn't available
-			if (appConfig.appMode !== "serverless" && ctx.isUnauthenticated()) await authenticateEncryptedToken(ctx);
+			if (ctx.isUnauthenticated()) await authenticateEncryptedToken(ctx);
 
 			await next();
 		})
@@ -651,10 +663,7 @@ const init = async ({
 		ctx.status = 202;
 		ctx.type = ".html";
 		// end request
-		return (ctx.body =
-			appConfig.appMode !== "apiOnly"
-				? "Endpoint is not found"
-				: `
+		return (ctx.body = `
           <!DOCTYPE html>
           <html lang="en">
             <head>
@@ -720,7 +729,7 @@ const init = async ({
 				cors: {
 					origin: corOrigins.length
 						? corOrigins.map((origin) => (typeof origin === "object" ? origin.host : origin))
-						: [appConfig.sitename || ""],
+						: [appConfig.serverAddress || ""],
 					// credentials: true,
 					methods: appConfig.methods?.map((meth) => meth.toUpperCase()),
 					// allowedHeaders: ["Content-Type", "Authorization"],
@@ -734,39 +743,38 @@ const init = async ({
 			app.context.io = io;
 			io.on("connection", (socket: Socket) => {
 				// console.log("socket.handshake: ", socket.handshake);
-				if (appConfig.appMode !== "serverless") {
-					if (app.context.tenantMode) {
-						socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstance;
-						socket.handshake.auth["tenantMode"] = app.context.tenantMode;
-					} else if (app.context.sequelizeInstances) {
-						// tenantMode can be set in either authorization API prefix or a subdomain in inbound requests
-						if (appConfig.apiMultiTenancyMode === true || (appConfig.apiMultiTenancyMode as string[])) {
-							// true will default to values: live && test
-							const authorization = socket.handshake.auth.token || socket.handshake.auth.authorization;
-							const authorizationPrefix = authorization?.includes("_") && authorization.split("_")[0];
+				if (app.context.tenantMode) {
+					socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstance;
+					socket.handshake.auth["tenantMode"] = app.context.tenantMode;
+				} else if (app.context.sequelizeInstances) {
+					// tenantMode can be set in either authorization API prefix or a subdomain in inbound requests
+					if (appConfig.apiMultiTenancyMode === true || (appConfig.apiMultiTenancyMode as string[])) {
+						// true will default to values: live && test
+						const authorization = socket.handshake.auth.token || socket.handshake.auth.authorization;
+						const authorizationPrefix = authorization?.includes("_") && authorization.split("_")[0];
 
-							socket.handshake.auth["tenantMode"] =
-								authorizationPrefix && app.context.sequelizeInstances[authorizationPrefix] && authorizationPrefix;
-							// where tenant extraction is not possible on authorization prefix, try the url subdomain
-							if (!socket.handshake.auth["tenantMode"]) {
-								const url = socket.handshake.headers["host"];
-								if (url && url.includes(".")) {
-									const domainArraySplit = (url.includes("://") ? url.split("://")[0] : url).split(".");
-									const subdomains = domainArraySplit.filter(
-										(str, i) => i + 1 !== domainArraySplit.length && 1 !== domainArraySplit.length - 1,
-									);
-									socket.handshake.auth["tenantMode"] = subdomains.length && app.context.sequelizeInstances[subdomains[0]] && subdomains[0];
-								}
+						socket.handshake.auth["tenantMode"] =
+							authorizationPrefix && app.context.sequelizeInstances[authorizationPrefix] && authorizationPrefix;
+						// where tenant extraction is not possible on authorization prefix, try the url subdomain
+						if (!socket.handshake.auth["tenantMode"]) {
+							const url = socket.handshake.headers["host"];
+							if (url && url.includes(".")) {
+								const domainArraySplit = (url.includes("://") ? url.split("://")[0] : url).split(".");
+								const subdomains = domainArraySplit.filter(
+									(str, i) => i + 1 !== domainArraySplit.length && 1 !== domainArraySplit.length - 1,
+								);
+								socket.handshake.auth["tenantMode"] = subdomains.length && app.context.sequelizeInstances[subdomains[0]] && subdomains[0];
 							}
-							if (socket.handshake.auth["tenantMode"])
-								socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances[socket.handshake.auth["tenantMode"]];
-							else if (app.context.sequelizeInstances["test"]) {
-								socket.handshake.auth["tenantMode"] = "test";
-								socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances["test"];
-							} else socket.handshake.auth["tenantMode"] = undefined;
 						}
+						if (socket.handshake.auth["tenantMode"])
+							socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances[socket.handshake.auth["tenantMode"]];
+						else if (app.context.sequelizeInstances["test"]) {
+							socket.handshake.auth["tenantMode"] = "test";
+							socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances["test"];
+						} else socket.handshake.auth["tenantMode"] = undefined;
 					}
 				}
+
 				app.context.ioSocket = socket;
 			});
 
@@ -812,7 +820,7 @@ const init = async ({
 					cors: {
 						origin: corOrigins.length
 							? corOrigins.map((origin) => (typeof origin === "object" ? origin.host : origin))
-							: [appConfig.sitename || ""],
+							: [appConfig.serverAddress || ""],
 						// credentials: true,
 						methods: appConfig.methods?.map((meth) => meth.toUpperCase()),
 						optionsSuccessStatus: 200,
@@ -821,40 +829,38 @@ const init = async ({
 				//expose socket.io to ctx process
 				app.context.io = io;
 				io.on("connection", (socket: Socket) => {
-					if (appConfig.appMode !== "serverless") {
-						if (app.context.tenantMode) {
-							socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstance;
-							socket.handshake.auth["tenantMode"] = app.context.tenantMode;
-						} else if (app.context.sequelizeInstances) {
-							// tenantMode can be set in either authorization API prefix or a subdomain in inbound requests
-							if (appConfig.apiMultiTenancyMode === true || (appConfig.apiMultiTenancyMode as string[])) {
-								// true will default to values: live && test
-								const authorization = socket.handshake.auth.token || socket.handshake.auth.authorization;
-								const authorizationPrefix = authorization?.includes("_") && authorization.split("_")[0];
+					if (app.context.tenantMode) {
+						socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstance;
+						socket.handshake.auth["tenantMode"] = app.context.tenantMode;
+					} else if (app.context.sequelizeInstances) {
+						// tenantMode can be set in either authorization API prefix or a subdomain in inbound requests
+						if (appConfig.apiMultiTenancyMode === true || (appConfig.apiMultiTenancyMode as string[])) {
+							// true will default to values: live && test
+							const authorization = socket.handshake.auth.token || socket.handshake.auth.authorization;
+							const authorizationPrefix = authorization?.includes("_") && authorization.split("_")[0];
 
-								socket.handshake.auth["tenantMode"] =
-									authorizationPrefix && app.context.sequelizeInstances[authorizationPrefix] && authorizationPrefix;
-								// where tenant extraction is not possible on authorization prefix, try the url subdomain
-								if (!socket.handshake.auth["tenantMode"]) {
-									const url = socket.handshake.headers["host"];
-									if (url && url.includes(".")) {
-										const domainArraySplit = (url.includes("://") ? url.split("://")[0] : url).split(".");
-										const subdomains = domainArraySplit.filter(
-											(str, i) => i + 1 !== domainArraySplit.length && 1 !== domainArraySplit.length - 1,
-										);
-										socket.handshake.auth["tenantMode"] =
-											subdomains.length && app.context.sequelizeInstances[subdomains[0]] && subdomains[0];
-									}
+							socket.handshake.auth["tenantMode"] =
+								authorizationPrefix && app.context.sequelizeInstances[authorizationPrefix] && authorizationPrefix;
+							// where tenant extraction is not possible on authorization prefix, try the url subdomain
+							if (!socket.handshake.auth["tenantMode"]) {
+								const url = socket.handshake.headers["host"];
+								if (url && url.includes(".")) {
+									const domainArraySplit = (url.includes("://") ? url.split("://")[0] : url).split(".");
+									const subdomains = domainArraySplit.filter(
+										(str, i) => i + 1 !== domainArraySplit.length && 1 !== domainArraySplit.length - 1,
+									);
+									socket.handshake.auth["tenantMode"] = subdomains.length && app.context.sequelizeInstances[subdomains[0]] && subdomains[0];
 								}
-								if (socket.handshake.auth["tenantMode"])
-									socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances[socket.handshake.auth["tenantMode"]];
-								else if (app.context.sequelizeInstances["test"]) {
-									socket.handshake.auth["tenantMode"] = "test";
-									socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances["test"];
-								} else socket.handshake.auth["tenantMode"] = undefined;
 							}
+							if (socket.handshake.auth["tenantMode"])
+								socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances[socket.handshake.auth["tenantMode"]];
+							else if (app.context.sequelizeInstances["test"]) {
+								socket.handshake.auth["tenantMode"] = "test";
+								socket.handshake.auth["sequelizeInstance"] = app.context.sequelizeInstances["test"];
+							} else socket.handshake.auth["tenantMode"] = undefined;
 						}
 					}
+
 					app.context.ioSocket = socket;
 				});
 				socketStart = true;

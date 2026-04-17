@@ -1,12 +1,14 @@
+//import { authenticatedUser } from "./account.routes.js";
 import { publicAdminRoutes } from "./publicAdmin.routes.js";
-import { publicUsers } from "./publicUsers.routes.js";
-import { Router } from "../../../_/index.js";
+import { Router } from "@medlink/common";
+import { publicClientUsers } from "./publicClientUsers.routes.js";
 
-const router = Router();
+const router = Router("auth");
 
-router.use(publicUsers.routes());
+// Platform uses a combined Client and Delivery Partner user access in endpoints
+router.use(publicClientUsers.routes());
 
-// Admin exclusive access endpoints
+// Admin access endpoints
 router.use(publicAdminRoutes.routes());
 
 export { router as nonAuthAccountRelatedRoutes };
