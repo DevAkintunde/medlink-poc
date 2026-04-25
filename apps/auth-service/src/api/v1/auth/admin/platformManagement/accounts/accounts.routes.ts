@@ -54,7 +54,7 @@ router.use(
 /**
  * Fetch all registered user accounts
  * @openapi
- * /v1/auth/admin/accounts/{userType}:
+ * /auth/admin/accounts/{userType}:
  *   get:
  *     tags:
  *       - Platform users & accounts management (Admin)
@@ -301,7 +301,7 @@ router.get(
 /**
  * Fetch a single registered user account
  * @openapi
- * /v1/auth/admin/accounts/{userType}/{email}:
+ * /auth/admin/accounts/{userType}/{email}:
  *   get:
  *     tags:
  *       - Platform users & accounts management (Admin)
@@ -453,7 +453,7 @@ router.get(
 /**
  * Create a new user account from the admin dashboard. Only a "Admin (Top-Level Management)" (level:3) user would be abel to do this
  * @openapi
- * /v1/auth/admin/accounts/{userType}/create:
+ * /auth/admin/accounts/{userType}/create:
  *   post:
  *     tags:
  *       - Platform users & accounts management (Admin)
@@ -631,7 +631,7 @@ router.post(
 /**
  * Perform a suspend of re-activation on an existing user account
  * @openapi
- * /v1/auth/admin/accounts/{userType}/{email}/action/{action}:
+ * /auth/admin/accounts/{userType}/{email}/action/{action}:
  *   get:
  *     tags:
  *       - Platform users & accounts management (Admin)
@@ -803,7 +803,7 @@ router.get(["/user/:email/action/:action", "/:usersType/:email/action/:action"],
 /**
  * Update an admin user role
  * @openapi
- * /v1/auth/admin/accounts/{userType}/{email}/role:
+ * /auth/admin/accounts/{userType}/{email}/role:
  *   patch:
  *     tags:
  *       - Platform users & accounts management (Admin)
@@ -952,7 +952,7 @@ router.patch(["/user/:email/role", "/:usersType/:email/role"], async (ctx) => {
 /**
  * Delete a user account
  * @openapi
- * /v1/auth/admin/accounts/{userType}/{email}:
+ * /auth/admin/accounts/{userType}/{email}:
  *   delete:
  *     tags:
  *       - Platform users & accounts management (Admin)

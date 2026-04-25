@@ -45,7 +45,7 @@ router.use(
 /**
  *
  * @openapi
- * /v1/auth/admin/management/settings/site-config:
+ * /auth/admin/management/settings/site-config:
  *   get:
  *     tags:
  *       - Platform Privileged Management, Executive Admin or higher
@@ -180,7 +180,7 @@ router.get("/", async (ctx) => {
 /**
  *
  * @openapi
- * /v1/auth/admin/management/settings/site-config:
+ * /auth/admin/management/settings/site-config:
  *   patch:
  *     tags:
  *       - Platform Privileged Management, Executive Admin or higher

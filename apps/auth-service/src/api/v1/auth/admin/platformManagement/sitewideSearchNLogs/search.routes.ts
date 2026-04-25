@@ -30,12 +30,12 @@ router.use(requestParser({ multipart: true }), async (ctx, next) => {
 
 /**
  * @openapi
- * /v1/auth/admin/search:
+ * /auth/admin/search:
  *   post:
  *     tags:
  *       - Platform search, logs & reports (Admin)
  *     summary: Run search across platorm data
- *     description: "Provide a search phrase to search across multiple data types. Note: Some detail might be filtered out of a result depending on the privilege of the signed-in user. Ensure to sync model types here with 'a/pi/v1/s/config/search-properties/'"
+ *     description: "Provide a search phrase to search across multiple data types. Note: Some detail might be filtered out of a result depending on the privilege of the signed-in user. Ensure to sync model types here with '/v1/s/config/search-properties/'"
  *     security:
  *       - Token: []
  *     parameters:

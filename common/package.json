@@ -3,13 +3,24 @@
   "name": "@medlink/common",
   "version": "1.0.0",
   "type": "module",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/platform.config.js",
+      "types": "./dist/platform.config.d.ts"
+    }
   },
   "private": true,
   "engines": {
     "node": ">=22",
     "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "tsc"
   },
   "dependencies": {
     "@azure/identity": "^4.13.1",

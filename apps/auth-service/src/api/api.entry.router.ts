@@ -1,11 +1,25 @@
 // routes imports
 import config from "../../app.config.js";
 import swaggerDocs from "../../app.swagger.js";
-import { v1 } from "./v1/index.js";
+// import { v1 } from "./v1/index.js";
 import appConfig from "../../app.config.js";
 import { Router } from "@medlink/common";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readdirSync } from "node:fs";
 
-// contorl allowed methods
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// get all api versions in directory
+const apiVs = readdirSync(__dirname, { withFileTypes: true })
+	// filter to directory
+	.filter((dir) => dir.isDirectory())
+	.map((dir) => dir.name);
+
+// const resolve = (p: string) => path.resolve(__dirname, p);
+// const projectRoot = process.cwd();
+// console.log("apiVs", apiVs);
+
+// control allowed methods
 const enforcedMethods = config.methods;
 const allowableMethods = (
 	enforcedMethods && Array.isArray(enforcedMethods) && enforcedMethods.length ? enforcedMethods : ["get", "post", "patch", "delete"]
@@ -32,23 +46,39 @@ router.use(async (ctx, next) => {
 	}
 });
 
-const routerAPI = Router();
-routerAPI.use(v1.routes()); // import v1 routes
+/* We are creating a dynamic router version here such that all available version is auto load if or when available */
+for (const versionDir of apiVs) {
+	const dir = path.resolve(path.join(__dirname, versionDir, "index.js"));
+	const vIndex = await import(dir);
+	const version = vIndex && (Object.values(vIndex)[0] as typeof Router);
 
-/**
- * Swagger docs main endpoint
- */
-routerAPI.get("/:version/docs", async (ctx, next) => {
-	// lets extract key ID
-	const apiVersion = ctx.params["version"];
-	const versionEtract = apiVersion?.substring(apiVersion.length - 1, apiVersion.length) || "Unknown";
+	if (!version) continue;
 
-	return await swaggerDocs(
-		{
-			title: (appConfig.serviceName || appConfig.projectName) + " API",
-			version: "1.0.0",
-			description: `API Version => '''${versionEtract}'''`,
-			/* "termsOfService": "http://example.com/terms/",
+	const routerAPI = Router();
+	routerAPI.use(version.routes()); // import v1 routes - and extendable to future versioning
+
+	/**
+	 * Swagger docs main endpoint
+	 */
+	routerAPI.get("/:version/docs", async (ctx, next) => {
+		// lets extract key ID
+		const apiVersion = ctx.params["version"];
+		// check if version is valid
+		if (!apiVersion || !apiVs.includes(apiVersion)) {
+			return (ctx.body = {
+				status: 404,
+				statusText: `This API service seems to be working but this api version or endpoint isn't`,
+			});
+		}
+
+		const versionExtract = apiVersion.substring(apiVersion.length - 1, apiVersion.length);
+
+		return await swaggerDocs(
+			{
+				title: (appConfig.serviceName || appConfig.projectName) + " API",
+				version: "1.0.0",
+				description: `API Version => '''${versionExtract}'''`,
+				/* "termsOfService": "http://example.com/terms/",
 					"contact": {
 						"name": "API Support",
 						"url": "http://www.example.com/support",
@@ -58,13 +88,15 @@ routerAPI.get("/:version/docs", async (ctx, next) => {
 						"name": "Apache 2.0",
 						"url": "https://www.apache.org/licenses/LICENSE-2.0.html"
 					},, */
-		},
-		{
-			routePrefix: `/${apiVersion}/docs`, // route where the view is returned
-			specPrefix: `/${apiVersion}/docs/spec`, // route where the spec is returned
-		},
-	)(ctx, next);
-});
+			},
+			{
+				routePrefix: `/${apiVersion}/docs`, // route where the view is returned
+				specPrefix: `/${apiVersion}/docs/spec`, // route where the spec is returned
+			},
+		)(ctx, next);
+	});
+	router.use(routerAPI.routes());
+}
 
 /**
  * Use to return the '/' api endpoint of the outputs in the middleware above
@@ -86,16 +118,22 @@ routerAPI.get("/:version/docs", async (ctx, next) => {
  *       500:
  *         description: This let's you know if a server error occured
  */
-routerAPI.all("/:version", (ctx) => {
+router.all("/:version", (ctx) => {
+	const versionDefination = ctx.params["version"];
+
+	const checkVersion =
+		versionDefination && apiVs.includes(versionDefination)
+			? "'Version: " + versionDefination.substring(versionDefination.length - 1, versionDefination.length) + "'"
+			: "Unknown Version";
+
 	ctx.status = 200;
 	return (ctx.body = {
 		status: 200,
-		statusText: `Awesome! This verifies that API version "${ctx.params["version"]?.substring(ctx.params["version"].length - 1, ctx.params["version"].length) || "Unknown"}" is accessible and working!`,
+		statusText: `Awesome! This verifies that API ${checkVersion === "Unknown Version" ? `server is accessible. Request should however be built such that the API version is defined; such as: ${ctx.host}/${apiVs[0]}` : checkVersion + " is accessible and working!"}`,
 	});
 });
 
-router.use(routerAPI.routes());
-export default router;
+export { router };
 
 /**
  *  Global props

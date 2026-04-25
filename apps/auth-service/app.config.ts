@@ -1,9 +1,10 @@
-import { ConfigDefination, default as ProjectConfig } from "../../platform.config.js";
+import { PlatformConfig } from "@medlink/common/config";
 
 /* Use this to overwrite project level configurations if needed */
-const config: ConfigDefination = {
-	...ProjectConfig,
+const config: typeof PlatformConfig = {
+	...PlatformConfig,
 	apiMultiTenancyMode: false,
+	useCacheAsRedisIsNotAvailable: true,
 	methods: ["GET", "PATCH", "POST", "DELETE"],
 	serviceName: "Auth Service",
 

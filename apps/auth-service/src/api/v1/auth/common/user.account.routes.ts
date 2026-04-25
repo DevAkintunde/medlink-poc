@@ -12,11 +12,11 @@ import {
 	requestParser,
 	Router,
 	statusCodes,
-	updateAccount,
 	userAccessTimestampsLog,
 	logger,
 	UserSecurity,
 	JsonObject,
+	defaultMailTemplate,
 } from "@medlink/common";
 
 import { clientFormValidator } from "../../../../validators/clientFormValidator.js";
@@ -24,8 +24,8 @@ import { unlinkSync } from "node:fs";
 import path from "node:path";
 import validator from "validator";
 import { adminFormValidator } from "../../../../validators/adminFormValidator.js";
-import { defaultMailTemplate } from "../../../../../../../common/functions/mailTemplates/defaultMailTemplate.js";
 import config from "../../../../../app.config.js";
+import { updateAccount } from "../../../../controllers/account.controller.js";
 
 const router = Router();
 const userTypes = {
@@ -47,7 +47,7 @@ router.use(async (ctx, next) => {
 /**
  * Access signed-in user data. This includes the raw scope on the User model
  * @openapi
- * /v1/auth/me:
+ * /auth/me:
  *   get:
  *     tags:
  *       - Current signed-in user self management
@@ -134,7 +134,7 @@ router.get("/me", async (ctx) => {
 /**
  * sign out account
  * @openapi
- * /v1/auth/logout:
+ * /auth/logout:
  *   get:
  *     tags:
  *       - Current signed-in user self management
@@ -187,7 +187,7 @@ router.get("/logout", (ctx) => {
 /**
  * Update a user account
  * @openapi
- * /v1/auth/update:
+ * /auth/update:
  *   patch:
  *     tags:
  *       - Current signed-in user self management
@@ -299,7 +299,7 @@ router.patch(
 /**
  * Use this to update or delete/remove a user avatar
  * @openapi
- * /v1/auth/avatar:
+ * /auth/avatar:
  *   patch:
  *     tags:
  *       - Current signed-in user self management
@@ -398,7 +398,7 @@ router.patch(
 /**
  * update user password
  * @openapi
- * /v1/auth/password:
+ * /auth/password:
  *   patch:
  *     tags:
  *       - Current signed-in user self management
@@ -470,7 +470,7 @@ router.patch(
  *
  * # update user email address
  * @openapi
- * /v1/auth/email:
+ * /auth/email:
  *   patch:
  *     tags:
  *       - Current signed-in user self management

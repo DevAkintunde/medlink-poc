@@ -1,10 +1,10 @@
 import { logger } from "./utils/logger.js";
 import { init, InMemoryCache } from "./server.js";
+import { config } from "./platform.config.js";
 export * from "./utils/index.js";
 export * from "./models/index.js";
 export * from "./middlewares/index.js";
 export * from "./functions/index.js";
-export * from "./controllers/index.js";
 export * from "./constants/index.js";
 export * from "./config/index.js";
 export * from "./@types/index.js";
@@ -12,6 +12,7 @@ export * from "./@types/index.js";
 export { logger };
 export { init as server };
 export { InMemoryCache };
+export { config as PlatformConfig };
 
 /**
  * Custom caching mechanism using Map()

@@ -1,6 +1,6 @@
 import { Op } from "sequelize";
 import { dbQuerier, Notification, Router, statusCodes } from "@medlink/common";
-import { AdminRole } from "../../../../models/accounts";
+import { AdminRole } from "../../../../models/accounts/AdminRole.model.js";
 
 const router = Router({
 	prefix: "/notifications",

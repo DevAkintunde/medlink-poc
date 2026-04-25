@@ -8,7 +8,7 @@ const router = Router({
 /**
  * Let's list all available user roles, requiring authenticated access
  * openapi
- * /v3/field/auth/roles:
+ * /field/auth/roles:
  *   get:
  *     tags:
  *       - Core Basics

@@ -167,15 +167,13 @@ instances.map((sequelize) => {
 			updatedAt: "updated",
 			paranoid: true,
 			deletedAt: "deleted",
-			sequelize,
+			sequelize: sequelize,
 			modelName: "Client", // We need to choose the model name
 		},
 	);
 
 	client.hasOne(UserSetting(sequelize), {
 		as: "Setting",
-		constraints: false,
-		foreignKey: "user_uuid",
 		scope: { user_type: "client" },
 		onDelete: "CASCADE",
 		onUpdate: "CASCADE",
@@ -183,9 +181,7 @@ instances.map((sequelize) => {
 	UserSetting(sequelize).belongsTo(client, {
 		foreignKey: "user_uuid",
 		constraints: false,
-		//as: 'ClientSettingOwner'
 	});
-
 });
 
 export const Client = (db: Sequelize) => db.models["Client"] as ModelStatic<ClientStatic>;

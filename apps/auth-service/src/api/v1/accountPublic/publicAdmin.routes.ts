@@ -5,30 +5,32 @@ import {
 	hashPassword,
 	logger,
 	mailSender,
+	newUserAccountCreationTemplate,
 	notificationLogger,
 	otpLinkGenerator,
 	otpLinkVerifier,
 	requestParser,
-	signAccountInLocal,
-	signAccountInWithThirdParty,
-	signAccountInWithThirdPartyValidateAs,
-	signAccountInWithThirdPartyVerifier,
 	statusCodes,
 } from "@medlink/common";
 import { adminFormValidator } from "../../../validators/adminFormValidator.js";
 import { AdminUser } from "../../../@types/index.js";
 import { UserSetting } from "../../../models/accounts/UserSetting.model.js";
-import { newUserAccountCreationTemplate } from "../../../../../../common/functions/mailTemplates/newUserAccountCreationTemplate.js";
 import { adminController } from "../../../controllers/admin.addon.userController.js";
 import { Admin } from "../../../models/accounts/Admin.model.js";
 import validator from "validator";
+import {
+	signAccountInLocal,
+	signAccountInWithThirdParty,
+	signAccountInWithThirdPartyValidateAs,
+	signAccountInWithThirdPartyVerifier,
+} from "../../../controllers/account.controller.js";
 
 const router = Router("admin");
 
 /**
  * Direct Sign in process without 2FA option
  * @openapi
- * /v1/auth/admin/login:
+ * /admin/login:
  *   post:
  *     tags:
  *       - Admin Users
@@ -141,7 +143,7 @@ const router = Router("admin");
 /**
  * 2FA specific sign-in
  * @openapi
- * /v1/auth/admin/login/2fa:
+ * /admin/login/2fa:
  *   post:
  *     tags:
  *       - Admin Users
@@ -347,7 +349,7 @@ router.post(
 /**
  * Reset Admin passowrd
  * @openapi
- * /v1/auth/admin/reset-password:
+ * /admin/reset-password:
  *   post:
  *     tags:
  *       - Admin Users
@@ -401,11 +403,6 @@ router.post(
 			return;
 		}
 		ctx.state.userType = "Admin";
-
-		// //remove this below lines once email feature has been implemented
-		// ctx.status = statusCodes.SERVICE_UNAVAILABLE;
-		// ctx.statusText = "The service is currently not available";
-		// return;
 		await next();
 	},
 	adminFormValidator.resetPassword,
@@ -418,7 +415,7 @@ router.post(
 /**
  * validate Admin passowrd reset
  * @openapi
- * /v1/auth/admin/set-new-password:
+ * /admin/set-new-password:
  *   post:
  *     tags:
  *       - Admin Users
@@ -476,7 +473,7 @@ router.post(
  *       5xx:
  *         description: Unexpected server error occured
  */
-router.post("/auth/set-new-password", requestParser({ multipart: true }), otpLinkVerifier, async (ctx) => {
+router.post("/set-new-password", requestParser({ multipart: true }), otpLinkVerifier, async (ctx) => {
 	const { newPassword, repeatedNewPassword } = ctx.request.body as JsonObject;
 	if (newPassword !== repeatedNewPassword) {
 		ctx.status = statusCodes.CONFLICT;

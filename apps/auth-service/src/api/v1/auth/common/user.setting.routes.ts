@@ -14,11 +14,11 @@ import {
 	UserSecurity,
 	OTP,
 	JsonObject,
+	defaultMailTemplate,
 } from "@medlink/common";
 import validator from "validator";
-import { UserSetting } from "../../../../models/accounts";
-import config from "../../../../../app.config";
-import { defaultMailTemplate } from "../../../../../../../common/functions/mailTemplates/defaultMailTemplate";
+import { UserSetting } from "../../../../models/accounts/UserSetting.model.js";
+import config from "../../../../../app.config.js";
 
 const router = Router("setting");
 const userTypes = {
@@ -29,7 +29,7 @@ const userTypes = {
 /**
  *
  * @openapi
- * /v1/auth/setting:
+ * /auth/setting:
  *   get:
  *     tags:
  *       - Current signed-in user self management
@@ -132,7 +132,7 @@ router.get("/", async (ctx) => {
 /**
  *
  * @openapi
- * /v1/auth/setting/notifications:
+ * /auth/setting/notifications:
  *   post:
  *     tags:
  *       - Current signed-in user self management
@@ -143,7 +143,7 @@ router.get("/", async (ctx) => {
  *     parameters:
  *       - $ref: '#/components/parameters/appID'
  *     requestBody:
- *       description: "Update user notifications setting. Kindly refer to the 'api/v1/s/config/user-setting' under the 'Platform Misc' to review the expected updated properties. Where an invalid label is provided, it would be ignored."
+ *       description: "Update user notifications setting. Kindly refer to the '/v1/s/config/user-setting' under the 'Platform Misc' to review the expected updated properties. Where an invalid label is provided, it would be ignored."
  *       required: true
  *       content:
  *         application/json: # Media type
@@ -217,7 +217,7 @@ router.post("/notifications", requestParser({ multipart: true }), async (ctx) =>
 /**
  * Enable/Disable 2FA on account
  * @openapi
- * /v1/auth/setting/2fa/{action}:
+ * /auth/setting/2fa/{action}:
  *   post:
  *     tags:
  *       - Current signed-in user self management
@@ -355,7 +355,8 @@ router.post("/2fa/:action", requestParser(), async (ctx) => {
 				}
 
 				// lets update and forward new user state data to frontend
-				const accesssTokenLifetime = config.authTokenValidity ? config.authTokenValidity + "d" : "3d";
+				const accesssTokenLifetime =
+					config.authTokenLifetime && !isNaN(Number(config.authTokenLifetime)) ? config.authTokenLifetime + "m" : "3d";
 				const token = await encryptionToken(user, {
 					expiresIn: accesssTokenLifetime,
 				});
@@ -435,7 +436,7 @@ router.post("/2fa/:action", requestParser(), async (ctx) => {
 					});
 				}
 
-				//ctx.redirect(`/api/v1/auth/setting/2fa/enable/confirm`);
+				//ctx.redirect(`/v1/auth/setting/2fa/enable/confirm`);
 				ctx.status = statusCodes.ACCEPTED;
 				return (ctx.body = {
 					status: statusCodes.ACCEPTED,
@@ -457,7 +458,7 @@ router.post("/2fa/:action", requestParser(), async (ctx) => {
 /**
  * Enable 2FA on account confirmation
  * @openapi
- * /v1/auth/setting/2fa/enable/confirm:
+ * /auth/setting/2fa/enable/confirm:
  *   post:
  *     tags:
  *       - Current signed-in user self management
@@ -545,7 +546,8 @@ router.post("/2fa/enable/confirm", requestParser(), async (ctx) => {
 					//reflect secured in logged-in user data
 					user["secured"] = true;
 					// lets generate, update and forward new user state data to frontend in new token
-					const accesssTokenLifetime = config.authTokenValidity ? config.authTokenValidity + "d" : "3d";
+					const accesssTokenLifetime =
+						config.authTokenLifetime && !isNaN(Number(config.authTokenLifetime)) ? config.authTokenLifetime + "m" : "3d";
 					const token = await encryptionToken(user, {
 						expiresIn: accesssTokenLifetime,
 					});
@@ -603,7 +605,7 @@ router.post("/2fa/enable/confirm", requestParser(), async (ctx) => {
 /**
  * add or remove recovery email(s) on signed-in user account
  * @openapi
- * /v1/auth/setting/recovery-email/{action}:
+ * /auth/setting/recovery-email/{action}:
  *   post:
  *     tags:
  *       - Current signed-in user self management

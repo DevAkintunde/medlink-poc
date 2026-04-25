@@ -24,7 +24,6 @@ import Redis from "ioredis";
 import { BAD_REQUEST, NOT_FOUND, OK, SERVICE_UNAVAILABLE, UNAUTHORIZED } from "./constants/statusCodes.js";
 import { Sequelize } from "sequelize";
 
-import { redisConfig } from "../apps/auth-service/redis.config.js";
 import { mailSender } from "./functions/mailSender.js";
 import { passportAuthInitializer } from "./config/passportAuthInitializer.js";
 import { logger } from "./utils/logger.js";
@@ -33,7 +32,7 @@ import { expressMiddleware } from "./middlewares/index.js";
 import { authenticateEncryptedToken } from "./utils/index.js";
 import Router from "@koa/router";
 import { RouterExtendedDefaultContext } from "./middlewares/router.js";
-import { ConfigDefination } from "../platform.config.js";
+import { config as PlatformConfig } from "./platform.config.js";
 
 const envs = process.env;
 const __dirname = nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url));
@@ -41,13 +40,16 @@ const resolve = (p: string) => nodePath.resolve(__dirname, p);
 const projectRoot = process.cwd();
 
 // Let import the app/platform configurations
-const platformConfig = nodePath.resolve(nodePath.join(projectRoot, "..", "..", "platform.config.js"));
-const serviceConfig = nodePath.resolve(nodePath.join(projectRoot, "app.config.js"));
+const platformConfig = nodePath.resolve(nodePath.join(__dirname, "platform.config.js"));
+const serviceConfig = [
+	nodePath.resolve(nodePath.join(projectRoot, "app.config.js")),
+	nodePath.resolve(nodePath.join(projectRoot, "dist", "app.config.js")),
+];
 
 const platformConfigSetting = (await import(platformConfig))?.["default"];
-const serviceConfigSetting = await import(serviceConfig);
+const serviceConfigSetting = (await import(serviceConfig[1]))?.["default"] || (await import(serviceConfig[0]))?.["default"];
 
-const appConfig = (serviceConfig ? { ...platformConfigSetting, ...serviceConfigSetting } : platformConfigSetting) as ConfigDefination;
+const appConfig = (serviceConfig ? { ...platformConfigSetting, ...serviceConfigSetting } : platformConfigSetting) as typeof PlatformConfig;
 
 // console.log("appConfig", appConfig);
 
@@ -75,62 +77,6 @@ const filesDirectory =
 // app auth init
 (async () => await passportAuthInitializer(passport))();
 
-/* Redis logic for initialization */
-const redisConnect = redisConfig();
-const isRedis = async (): Promise<Redis | null> =>
-	await new Promise((resolve, reject) => {
-		logger.info("Redis server info: " + JSON.stringify(redisConnect));
-		if (redisConnect) {
-			if (typeof redisConnect === "string") return reject(new Error(redisConnect));
-			let two000Count = 0; // retry tracker - shut down redis if this persistently fails to connect at start up
-			const redis = new Redis({
-				...redisConnect,
-				retryStrategy(times) {
-					const delay = Math.min(times * 50, 2000);
-					logger.info("Redis retry delay: " + delay);
-					if (delay === 2000) two000Count++;
-					// return two000Count > 3 || envs.NODE_ENV !== "production" ? null : delay;
-					return delay;
-				},
-				// lazyConnect: true,
-			})
-				.on("error", (err) => {
-					logger.error("Redis client init Error: ", err);
-					const quitCheck = two000Count > 3 || envs.NODE_ENV !== "production";
-					if (quitCheck) {
-						logger.warn("Unable to initiate a successful connect to a redis server and has been halted!");
-						// send admin email for follow-up
-						mailSender({
-							ignoreDevReceiverRewriteToSender: true,
-							// serverConfig: serverConfig,
-							receiver: [envs.MAIL_SERVER_SUPPORT_AUTH_MAIL || "", envs.MAIL_SERVER_AUTH_MAIL || "", "akin@mellywood.com"],
-							// sender: defaultSupportEmail,
-							subject: "Redis server issues",
-							content: `Unable to connect Redis server and ${appConfig.serviceName} might be having production issues at the moment!!`,
-							log: true,
-						});
-						redis.quit();
-						resolve(null);
-					} else logger.info("Attempting redis re-connection...");
-					//console.log("err['code']", err["code"], "= ECONNREFUSED");
-				})
-				.on("reconnecting", () => {
-					logger.info("Redis client reconnecting...");
-				})
-				.on("ready", () => {
-					logger.info("Redis client connected... 😊");
-					console.log("Redis client connected... 😊");
-					two000Count = 0; // reset retry tracker
-					resolve(redis);
-				});
-			return redis;
-		}
-		logger.warn(
-			"No Redis server configured! Starting up platform without any optimised caching system, and simply using in-memory caching",
-		);
-		resolve(null);
-	});
-
 // Cache
 const cacheConfig = {
 	max: 3000,
@@ -145,7 +91,6 @@ const cacheConfig = {
 };
 const InMemoryCache = new LRUCache(appConfig.cache ? { ...cacheConfig, ...appConfig.cache } : cacheConfig);
 export { InMemoryCache };
-export const redis = await isRedis();
 
 // The App
 interface extendedKoaDefaultContext extends Koa.DefaultContext {
@@ -170,11 +115,13 @@ export const appInstance = app; // the current context of the app, which is used
 // init
 const init = async ({
 	cronJobs,
+	redis,
 	appRoutes,
 	cors,
 	sessionConfig,
-	env = process.env.NODE_ENV,
+	env = envs.NODE_ENV,
 }: {
+	redis?: Redis;
 	cronJobs?: () => Promise<void>;
 	appRoutes: Router<DefaultState, RouterExtendedDefaultContext>;
 	cors?: { origin: (string | { host: string; csp: string })[]; allowedMethods?: string; exposeHeaders?: string; allowHeaaders?: "" };
@@ -197,8 +144,8 @@ const init = async ({
 	if (cronJobs) cronJobs();
 
 	// imported env variables
-	const PORT = process.env.PORT;
-	const localUrl = env === "development" ? (process.env.localUrl ? process.env.localUrl : "http://localhost") : undefined;
+	const PORT = envs.PORT;
+	const localUrl = env === "development" ? (envs.localUrl ? envs.localUrl : "http://localhost") : undefined;
 
 	// cors Options
 	const appCors: Options = { origin: undefined };
@@ -275,19 +222,19 @@ const init = async ({
 			sitename = sitename.includes("www") ? sitename.split("www.")[1] : sitename;
 			await mailSender({
 				testServer: true,
-				sender: process.env.MAIL_SERVER_AUTH_MAIL
-					? process.env.MAIL_SERVER_AUTH_MAIL.includes("@")
-						? process.env.MAIL_SERVER_AUTH_MAIL.split("@")[0] + "@" + sitename
-						: process.env.MAIL_SERVER_AUTH_MAIL + "@" + sitename
+				sender: envs.MAIL_SERVER_AUTH_MAIL
+					? envs.MAIL_SERVER_AUTH_MAIL.includes("@")
+						? envs.MAIL_SERVER_AUTH_MAIL.split("@")[0] + "@" + sitename
+						: envs.MAIL_SERVER_AUTH_MAIL + "@" + sitename
 					: undefined,
 			});
 		}
 	}
 
 	// session
-	app.keys = process.env.COOKIE_KEYS ? JSON.parse(process.env.COOKIE_KEYS) : null;
+	app.keys = envs.COOKIE_KEYS ? JSON.parse(envs.COOKIE_KEYS) : null;
 	let appSessionConfig = {
-		key: process.env.COOKIE_IDENTIFIER,
+		key: envs.COOKIE_IDENTIFIER,
 		maxAge: 7 * 24 * 60 * 60 * 1000, // 3days
 		autoCommit: true,
 		overwrite: true,
@@ -563,7 +510,7 @@ const init = async ({
 	});
 
 	app.use(async (ctx, next) => {
-		console.log("app path: ", ctx.path);
+		console.log(`${ctx.method} Request: `, ctx.path);
 		//console.log("ctx.url", ctx.url);
 		await next();
 	});
@@ -703,7 +650,7 @@ const init = async ({
 
 	//import websocket status setting
 	function WebSocket() {
-		const envSetting = process.env.SOCKET_IO || process.env.SOCKET || process.env.WEBSOCKET;
+		const envSetting = envs.SOCKET_IO || envs.SOCKET || envs.WEBSOCKET;
 		const caseInsensitive = envSetting && envSetting.toLowerCase();
 		if (caseInsensitive)
 			try {
@@ -803,9 +750,9 @@ const init = async ({
 	}
 
 	//INIT SSL SERVER
-	if (process.env.SSL_ENABLE && process.env.SSL_ENABLE.toLowerCase() === "true") {
-		const key = process.env.SSL_KEY;
-		const cert = process.env.SSL_CERTIFICATE;
+	if (envs.SSL_ENABLE && envs.SSL_ENABLE.toLowerCase() === "true") {
+		const key = envs.SSL_KEY;
+		const cert = envs.SSL_CERTIFICATE;
 
 		const sslConfig = {
 			key: key ? fs.readFileSync(key, "utf8").toString() : "",
@@ -865,7 +812,7 @@ const init = async ({
 				});
 				socketStart = true;
 			}
-			const thisServerPort = !isNaN(Number(process.env.SSL_PORT)) ? process.env.SSL_PORT : 5174;
+			const thisServerPort = !isNaN(Number(envs.SSL_PORT)) ? envs.SSL_PORT : 5174;
 			server2.listen(thisServerPort, () => {
 				console.info("Server (SSL) started on: " + thisServerPort + " | " + new Date(Date.now()));
 				if (socketStart) console.log("Websocket started with Server (SSL)");

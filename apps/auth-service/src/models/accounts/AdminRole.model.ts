@@ -40,7 +40,7 @@ instances.map((sequelize) => {
 		{
 			tableName: "admin_roles",
 			timestamps: false,
-			sequelize,
+			sequelize: sequelize,
 			modelName: "AdminRole", // We need to choose the model name
 		},
 	);
