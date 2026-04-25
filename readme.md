@@ -16,6 +16,14 @@
     - To do this, run: pnpm run <service>:db:sync. EG: pnpm run auth:db:sync
     - If you need data populated to database to work with, run: pnpm run <service>:db:tup. Some data has been inputted for this purpose. Where in doubt, please check the specific service directory in src/database/defaultTablesUp
 
+# Project Structure
+  - PNPM Workspace is used, there pnpm will have to be used as the project package manager
+  - /common directory contains exclusively logic that are reusable by all services as a shared library. This may be improved or strip down over time as need arises
+  - Services exist in the /apps directory. Management commands reference have been outlined in in Project Help section
+  - Since each service is dependent on /common shared library, build command naturally also build the /common
+  - Each service can be customised further using app.config.ts in the service directory. Whether or not this is reconfigured, a project based config is available in /common where default are defined.
+  - To spin up a new service, auth-service can always be duplicated as the start-off point
+
 # ENV Essentials
   - Each service must have a dedicated defined env file. Hence, create a .env file in each service directory and define the expected key values. See env.copy in service directory for reference.
   - To allow testign even in a production environment, it is always required to set a value for NODE_ENV, as either "production" or "development"

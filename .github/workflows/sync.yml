@@ -37,10 +37,19 @@ jobs:
         run: |
           # Merge source/main into dev-sync
           # This works because dev-sync and main share history
-          # git merge source/main --allow-unrelated-histories \
-          #   -m "Sync from source repository: ${GITHUB_SHA}" \
-          #   --no-edit
-          
+          git merge source/main --allow-unrelated-histories \
+            -m "Sync from source repository: ${GITHUB_SHA}" \
+            --no-edit
+
+          # 🚫 REMOVE workflows BEFORE pushing
+          rm -rf .github/workflows
+
+          # Stage the removal (important!)
+          git add -A
+
+          # Commit only if there are changes
+          git diff --cached --quiet || git commit -m "Remove workflows from sync"
+
           # Push updated dev-sync
           git push origin dev-sync
           
